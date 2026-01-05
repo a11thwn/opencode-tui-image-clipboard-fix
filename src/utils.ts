@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { ImageInfo } from './types';
 
 /**
- * Format bytes to human-readable size
+ * 格式化字节大小为人类可读格式
  */
 export function formatSize(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB'];
@@ -18,7 +18,7 @@ export function formatSize(bytes: number): string {
 }
 
 /**
- * Extract image info from data URL
+ * 从 data URL 提取图片信息
  */
 export function extractImageInfo(dataUrl: string): ImageInfo | null {
   const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/);
@@ -32,14 +32,14 @@ export function extractImageInfo(dataUrl: string): ImageInfo | null {
 }
 
 /**
- * Generate hash from base64 data
+ * 生成 base64 数据的哈希值
  */
 export function generateHash(base64: string): string {
   return createHash('sha256').update(base64).digest('hex').substring(0, 16);
 }
 
 /**
- * Get PNG dimensions from buffer
+ * 获取 PNG 图片尺寸
  */
 export function getPNGDimensions(buffer: Buffer): { width: number; height: number } | null {
   try {
@@ -59,7 +59,7 @@ export function getPNGDimensions(buffer: Buffer): { width: number; height: numbe
 }
 
 /**
- * Get image dimensions (currently supports PNG only)
+ * 获取图片尺寸（目前仅支持 PNG）
  */
 export function getImageDimensions(buffer: Buffer, mimeType: string): { width: number; height: number } | null {
   if (mimeType === 'image/png') {

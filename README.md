@@ -1,85 +1,122 @@
-# OpenCode Image Storage Plugin
+# OpenCode TUI Image Clipboard Fix
 
-Automatically save base64-encoded images as standalone files with intelligent storage management.
+修复 OpenCode TUI 中图片粘贴和拖入的问题：自动将图片保存为本地文件，并替换 `[Image N]` 占位符为实际文件路径。
 
-## Features
+[![npm version](https://badge.fury.io/js/opencode-tui-image-clipboard-fix.svg)](https://www.npmjs.com/package/opencode-tui-image-clipboard-fix)
 
-- **Automatic Conversion**: Converts base64 image data URLs to standalone files
-- **Intelligent Storage**: LRU cleanup when storage exceeds configured limits
-- **Duplicate Detection**: Avoids saving the same image multiple times using hash comparison
-- **PNG Dimension Extraction**: Automatically extracts width/height for PNG images
-- **Storage Statistics**: View total files, size, and date range via command
+## 安装
 
-## Installation
+### 方式一：npm 安装（推荐）
+
+在 `opencode.json` 中添加插件：
+
+```json
+{
+  "plugin": ["opencode-tui-image-clipboard-fix"]
+}
+```
+
+OpenCode 会自动通过 Bun 安装依赖。
+
+### 方式二：本地安装
 
 ```bash
-cd ~/.local/share/opencode/plugins
-git clone <repository-url> opencode-image-storage
+git clone https://github.com/chanliang/opencode-image-storage.git
 cd opencode-image-storage
 npm install
 npm run build
 ```
 
-## Configuration
+然后在 `opencode.json` 中配置：
 
-Default configuration:
 ```json
 {
-  "maxStorageMB": 2048,
-  "minFreeSpaceMB": 512,
-  "storageDir": "~/.local/share/opencode/storage/images"
+  "plugin": ["/path/to/opencode-image-storage"]
 }
 ```
 
-Override in your OpenCode config:
-```json
-{
-  "plugins": {
-    "opencode-image-storage": {
-      "maxStorageMB": 4096,
-      "minFreeSpaceMB": 1024,
-      "storageDir": "/custom/path/to/images"
-    }
-  }
-}
-```
+## 功能特性
 
-## Commands
+- ✅ **自动保存图片**：将 base64 图片数据保存为本地文件
+- ✅ **路径替换**：自动替换 `[Image 1]` 占位符为 `/path/to/image.png`
+- ✅ **去重检测**：使用 SHA-256 哈希避免保存重复图片
+- ✅ **LRU 清理**：当存储超过限制时自动删除最旧的图片
+- ✅ **移除 FilePart**：避免不支持图片的模型报错
+- ✅ **PNG 尺寸提取**：自动提取 PNG 图片的宽高信息
 
-### `opencode:cleanup-images`
-Manually delete all stored images.
-
-### `opencode:show-storage`
-Display storage statistics:
-- Total files count
-- Total storage size
-- Oldest/newest file timestamps
-- Storage directory path
-- Max storage limit
-
-## How It Works
-
-1. **Image Detection**: Listens to `message.updated` events
-2. **Extraction**: Finds base64 data URLs in message parts
-3. **Deduplication**: Checks SHA-256 hash to avoid duplicates
-4. **Storage**: Saves images as `{timestamp}_{hash}.{ext}`
-5. **Metadata**: Tracks file info in `metadata.json`
-6. **Cleanup**: Auto-deletes oldest files when limit exceeded
-
-## Output Example
+## 工作原理
 
 ```
-Saved image: ~/.local/share/opencode/storage/images/1704067200000_a1b2c3d4e5f6g7h8.png (342.5 KB, 1920x1080)
-Image already exists: ~/.local/share/opencode/storage/images/1704067100000_xyz123abc456.jpg (128.3 KB)
-Cleanup complete. Freed 512.0 MB
+┌─────────────────────────────────────────────────────┐
+│                OpenCode TUI                         │
+│  用户粘贴/拖入图片                                    │
+│  ↓                                                  │
+│  生成 FilePart (url: "data:image/...;base64,...")  │
+│  消息文本包含 [Image 1] 占位符                       │
+└─────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│           Image Storage Plugin                       │
+│  1. 监听 chat.message 和 messages.transform hook    │
+│  2. 检测图片 FilePart                               │
+│  3. 提取 base64 数据，保存为本地文件                   │
+│  4. 替换文本中的 [Image N] 为实际路径                 │
+│  5. 移除 FilePart（避免模型报错）                    │
+│  6. 添加提示让模型使用 read 工具读取图片              │
+└─────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────┐
+│                最终消息                              │
+│  "请分析这张图片 /path/to/image.png                  │
+│   [Image Reference: ...]"                           │
+│  模型使用 read 工具读取图片                          │
+└─────────────────────────────────────────────────────┘
 ```
 
-## Supported Formats
+## 配置
 
-- PNG (with dimension extraction)
+默认配置：
+
+- **存储目录**: `~/.local/share/opencode/storage/images`
+- **最大存储**: 2048 MB
+- **最小剩余空间**: 512 MB
+
+## 命令
+
+在 OpenCode 中可以使用以下命令：
+
+| 命令              | 说明                   |
+| ----------------- | ---------------------- |
+| `/cleanup-images` | 手动删除所有存储的图片 |
+| `/show-storage`   | 显示存储统计信息       |
+
+## 支持的格式
+
+- PNG (支持尺寸提取)
 - JPEG/JPG
 - GIF
 - WebP
+
+## 解决的问题
+
+1. **粘贴图片识别问题**：将 base64 图片保存为文件，替换占位符为路径
+2. **模型不支持图片报错**：移除 FilePart，只发送文本路径
+
+## 开发
+
+```bash
+# 安装依赖
+npm install
+
+# 编译
+npm run build
+
+# 监听模式
+npm run dev
+
+# 清理
+npm run clean
+```
 
 ## License
 

@@ -1,25 +1,63 @@
 {
-  "name": "opencode-image-storage",
+  "name": "opencode-tui-image-clipboard-fix",
   "version": "1.0.0",
-  "description": "OpenCode plugin to automatically save base64 images as standalone files with intelligent storage management",
+  "description": "OpenCode TUI plugin to fix image paste/drag issues - saves images locally and replaces [Image N] with file paths",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
     "opencode",
+    "opencode-plugin",
     "plugin",
     "image",
     "storage",
-    "base64"
+    "base64",
+    "clipboard",
+    "paste",
+    "drag-drop",
+    "ai",
+    "llm"
   ],
-  "author": "",
+  "author": "chanliang",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chanliang/opencode-tui-image-clipboard-fix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chanliang/opencode-tui-image-clipboard-fix/issues"
+  },
+  "homepage": "https://github.com/chanliang/opencode-tui-image-clipboard-fix#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opencode-ai/plugin": {
+      "optional": true
+    }
   }
 }
