@@ -95,13 +95,16 @@ const DEFAULT_CONFIG: PluginConfig = {
   storageDir: path.join(os.homedir(), ".local/share/opencode/storage/images"),
 };
 
+// 存储每个消息的图片路径映射（messageID -> imagePaths）
+const messageImagePaths = new Map<string, Map<string, string>>();
+
 /**
  * OpenCode Image Storage Plugin
  *
  * 功能：
  * 1. 监听用户消息中的图片（粘贴或拖入）
  * 2. 将 base64 图片保存为本地文件
- * 3. 替换消息中的 [Image N] 占位符为实际文件路径
+ * 3. 在发送给模型时替换 [Image N] 占位符为实际文件路径（不影响界面显示）
  * 4. 移除 FilePart，只保留文本（避免不支持图片的模型报错）
  */
 export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
@@ -112,14 +115,15 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
   const storageManager = new ImageStorageManager(config);
   await storageManager.initialize();
 
-  console.log(
-    `[ImageStoragePlugin] Initialized. Storage dir: ${config.storageDir}`
-  );
-
   /**
-   * 处理消息中的图片
+   * 处理消息中的图片，保存并返回路径映射
+   * @param parts 消息的 parts 数组
+   * @param saveImages 是否保存图片（chat.message 时保存，transform 时不保存）
    */
-  async function processImageParts(parts: Part[]): Promise<{
+  async function processImageParts(
+    parts: Part[],
+    saveImages: boolean = true
+  ): Promise<{
     modified: boolean;
     imagePaths: Map<string, string>;
   }> {
@@ -137,28 +141,22 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
       return { modified: false, imagePaths: imagePathMap };
     }
 
-    console.log(
-      `[ImageStoragePlugin] Processing ${imageParts.length} image(s)...`
-    );
-
     for (let i = 0; i < imageParts.length; i++) {
       const imagePart = imageParts[i];
       const imageIndex = i + 1;
       const placeholder = `[Image ${imageIndex}]`;
 
       try {
-        // 检查是否是 base64 data URL
+        // 检查是否是 base64 data URL（粘贴的图片）
         if (imagePart.url && imagePart.url.startsWith("data:image/")) {
-          const imagePath = await storageManager.saveImageAndReturnPath(
-            imagePart.url,
-            `msg_${Date.now()}`
-          );
-
-          if (imagePath) {
-            imagePathMap.set(placeholder, imagePath);
-            console.log(
-              `[ImageStoragePlugin] ✅ Saved ${placeholder} -> ${imagePath}`
+          if (saveImages) {
+            const imagePath = await storageManager.saveImageAndReturnPath(
+              imagePart.url,
+              `msg_${Date.now()}`
             );
+            if (imagePath) {
+              imagePathMap.set(placeholder, imagePath);
+            }
           }
         } else if (
           imagePart.source?.path &&
@@ -166,15 +164,11 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
           imagePart.source.path !== ""
         ) {
           // 已经是文件路径（拖入的文件）
-          const existingPath = imagePart.source.path;
-          imagePathMap.set(placeholder, existingPath);
-          console.log(
-            `[ImageStoragePlugin] ℹ️ Using existing path for ${placeholder}: ${existingPath}`
-          );
+          imagePathMap.set(placeholder, imagePart.source.path);
         }
       } catch (error) {
         console.error(
-          `[ImageStoragePlugin] ❌ Error processing ${placeholder}:`,
+          `[ImageStoragePlugin] Error processing image ${imageIndex}:`,
           error
         );
       }
@@ -185,6 +179,7 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
 
   /**
    * 修改文本内容：替换占位符、去重路径、添加提示
+   * 只在 transform hook 中使用，不影响界面显示
    */
   function modifyTextContent(
     text: string,
@@ -196,7 +191,6 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
     // 1. 先从文本中移除所有已知的图片路径（去重）
     for (const imagePath of allPaths) {
       const escapedPath = imagePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      // 移除所有该路径的出现（包括前后的空格）
       const pathPattern = new RegExp(`\\s*${escapedPath}`, "g");
       newText = newText.replace(pathPattern, "");
     }
@@ -222,19 +216,16 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
   }
 
   /**
-   * 移除图片 FilePart
+   * 移除图片 FilePart（静默，不打印日志）
    */
-  function removeImageParts(parts: Part[]): void {
+  function removeImagePartsSilently(parts: Part[]): void {
     for (let i = parts.length - 1; i >= 0; i--) {
       const part = parts[i];
       if (
         part.type === "file" &&
         (part as FilePart).mime?.startsWith("image/")
       ) {
-        const removed = parts.splice(i, 1)[0] as FilePart;
-        console.log(
-          `[ImageStoragePlugin] 🗑️ Removed FilePart: ${removed.filename || "clipboard"}`
-        );
+        parts.splice(i, 1);
       }
     }
   }
@@ -242,71 +233,67 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
   return {
     /**
      * chat.message hook - 在用户消息发送时处理
+     * 只负责：1. 保存图片 2. 记录路径映射 3. 移除 FilePart
+     * 不修改 textPart.text，避免修改后的内容显示在界面上
      */
     "chat.message": async (
       input: ChatMessageInput,
       output: ChatMessageOutput
     ) => {
-      console.log("[ImageStoragePlugin] chat.message hook triggered");
-      
       const { parts } = output;
-      const { modified, imagePaths } = await processImageParts(parts);
+      const { modified, imagePaths } = await processImageParts(parts, true);
 
       if (!modified) {
         return;
       }
 
-      // 查找文本 part
-      const textPart = parts.find((p): p is TextPart => p.type === "text");
+      // 保存图片路径映射，供 transform hook 使用
+      const messageKey = input.messageID || `msg_${Date.now()}`;
+      messageImagePaths.set(messageKey, imagePaths);
 
-      if (textPart && textPart.text) {
-        textPart.text = modifyTextContent(textPart.text, imagePaths);
-        console.log(
-          `[ImageStoragePlugin] ✅ Updated text: "${textPart.text.substring(0, 150)}..."`
-        );
-      }
-
-      // 移除图片 FilePart
-      removeImageParts(parts);
-      console.log(`[ImageStoragePlugin] ✅ Final parts count: ${parts.length}`);
+      // 移除图片 FilePart（避免不支持图片的模型报错）
+      removeImagePartsSilently(parts);
     },
 
     /**
      * experimental.chat.messages.transform hook - 在发送给模型前转换消息
-     * 这是一个更底层的 hook，可以修改整个消息历史
+     * 在这里进行文本替换，确保模型收到的是完整的图片路径
+     * 这个修改只影响发送给模型的内容，不影响界面显示
      */
     "experimental.chat.messages.transform": async (
       input: {},
       output: MessagesTransformOutput
     ) => {
-      console.log("[ImageStoragePlugin] messages.transform hook triggered");
-      
       for (const message of output.messages) {
         // 只处理用户消息
         if (message.info?.role !== "user") continue;
 
         const { parts } = message;
-        const { modified, imagePaths } = await processImageParts(parts);
 
-        if (!modified) {
-          continue;
+        // 尝试从缓存获取图片路径
+        let imagePaths: Map<string, string> | undefined;
+        if (message.info?.id) {
+          imagePaths = messageImagePaths.get(message.info.id);
         }
 
-        // 查找文本 part
-        const textPart = parts.find((p): p is TextPart => p.type === "text");
+        // 如果缓存中没有，尝试从 parts 中提取（可能是历史消息）
+        if (!imagePaths || imagePaths.size === 0) {
+          const result = await processImageParts(parts, false);
+          if (result.modified) {
+            imagePaths = result.imagePaths;
+          }
+        }
 
-        if (textPart && textPart.text) {
-          textPart.text = modifyTextContent(textPart.text, imagePaths);
-          console.log(
-            `[ImageStoragePlugin] ✅ [transform] Updated text: "${textPart.text.substring(0, 100)}..."`
-          );
+        // 如果有图片路径，替换文本中的占位符
+        if (imagePaths && imagePaths.size > 0) {
+          const textPart = parts.find((p): p is TextPart => p.type === "text");
+          if (textPart && textPart.text) {
+            textPart.text = modifyTextContent(textPart.text, imagePaths);
+          }
         }
 
         // 移除图片 FilePart
-        removeImageParts(parts);
-        console.log(
-          `[ImageStoragePlugin] ✅ [transform] Final parts count: ${parts.length}`
-        );
+        removeImagePartsSilently(parts);
       }
     },
 
@@ -325,6 +312,11 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
         console.log(`Newest File: ${stats.newestFile || "N/A"}`);
         console.log(`Storage Dir: ${config.storageDir}`);
         console.log(`Max Storage: ${config.maxStorageMB} MB`);
+      },
+
+      "clear-cache": async () => {
+        messageImagePaths.clear();
+        console.log(`[ImageStoragePlugin] Cleared image path cache`);
       },
     },
   };

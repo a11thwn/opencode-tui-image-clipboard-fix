@@ -58,7 +58,7 @@ export class ImageStorageManager {
   async saveImage(dataUrl: string): Promise<ImageMetadata | null> {
     const imageInfo = extractImageInfo(dataUrl);
     if (!imageInfo) {
-      console.log('[ImageStorageManager] Invalid data URL format');
+      // Invalid data URL format
       return null;
     }
 
@@ -67,7 +67,7 @@ export class ImageStorageManager {
     // 检查是否已存在相同图片
     const existingImage = Array.from(this.metadata.values()).find(m => m.hash === hash);
     if (existingImage) {
-      console.log(`[ImageStorageManager] Image already exists: ${existingImage.path} (${formatSize(existingImage.size)})`);
+      // Image already exists, returning cached
       return existingImage;
     }
 
@@ -95,8 +95,7 @@ export class ImageStorageManager {
     this.metadata.set(filename, metadata);
     await this.saveMetadata();
 
-    const dimStr = dimensions ? `${dimensions.width}x${dimensions.height}` : 'unknown';
-    console.log(`[ImageStorageManager] Saved image: ${filepath} (${formatSize(imageInfo.size)}, ${dimStr})`);
+    // Image saved successfully
 
     // 检查是否需要清理
     await this.checkAndCleanup();
@@ -147,14 +146,14 @@ export class ImageStorageManager {
         await fs.unlink(file.path);
         freedBytes += file.size;
         this.metadata.delete(file.filename);
-        console.log(`[ImageStorageManager] Deleted old image: ${file.path} (${formatSize(file.size)})`);
+        // Deleted old image for cleanup
       } catch (err) {
         console.error(`[ImageStorageManager] Failed to delete ${file.path}:`, err);
       }
     }
 
     await this.saveMetadata();
-    console.log(`[ImageStorageManager] Cleanup complete. Freed ${formatSize(freedBytes)}`);
+    // Cleanup complete
   }
 
   /**
