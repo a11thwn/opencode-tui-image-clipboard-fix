@@ -3,8 +3,6 @@
 # OpenCode TUI Image Clipboard Fix - 一键安装脚本
 # 用法: curl -fsSL https://raw.githubusercontent.com/A11thwn/opencode-tui-image-clipboard-fix/main/install.sh | bash
 
-set -e
-
 PLUGIN_NAME="github:A11thwn/opencode-tui-image-clipboard-fix"
 CONFIG_FILE="$HOME/.config/opencode/opencode.json"
 
@@ -22,7 +20,6 @@ fi
 # 检查是否已经安装
 if grep -q "opencode-tui-image-clipboard-fix" "$CONFIG_FILE"; then
     echo "✅ 插件已经安装!"
-    echo "   如需重新安装，请先从配置中移除插件"
     exit 0
 fi
 
@@ -30,34 +27,65 @@ fi
 cp "$CONFIG_FILE" "$CONFIG_FILE.backup"
 echo "📦 已备份配置文件到: $CONFIG_FILE.backup"
 
-# 尝试使用 jq 添加插件
-if command -v jq &> /dev/null; then
-    # 先验证 JSON 是否有效
-    if jq empty "$CONFIG_FILE" 2>/dev/null; then
-        jq --arg plugin "$PLUGIN_NAME" '.plugin += [$plugin]' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-        echo "✅ 已使用 jq 添加插件到配置"
-    else
-        echo "⚠️  JSON 语法错误，尝试使用 sed 方式..."
-        # 使用 sed 方式
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            # macOS
-            sed -i '' 's/"plugin": \[/"plugin": [\
-        "'"$PLUGIN_NAME"'",/' "$CONFIG_FILE"
-        else
-            # Linux
-            sed -i 's/"plugin": \[/"plugin": [\n        "'"$PLUGIN_NAME"'",/' "$CONFIG_FILE"
-        fi
-        echo "✅ 已使用 sed 添加插件到配置"
-    fi
+# 使用 Python 添加插件（macOS 和 Linux 都有 Python）
+if command -v python3 &> /dev/null; then
+    python3 << EOF
+import json
+import sys
+
+config_file = "$CONFIG_FILE"
+plugin_name = "$PLUGIN_NAME"
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+    
+    if 'plugin' not in config:
+        config['plugin'] = []
+    
+    if plugin_name not in config['plugin']:
+        config['plugin'].append(plugin_name)
+    
+    with open(config_file, 'w') as f:
+        json.dump(config, f, indent=4)
+    
+    print("✅ 已添加插件到配置")
+except Exception as e:
+    print(f"❌ 错误: {e}")
+    sys.exit(1)
+EOF
+elif command -v python &> /dev/null; then
+    python << EOF
+import json
+import sys
+
+config_file = "$CONFIG_FILE"
+plugin_name = "$PLUGIN_NAME"
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+    
+    if 'plugin' not in config:
+        config['plugin'] = []
+    
+    if plugin_name not in config['plugin']:
+        config['plugin'].append(plugin_name)
+    
+    with open(config_file, 'w') as f:
+        json.dump(config, f, indent=4)
+    
+    print("✅ 已添加插件到配置")
+except Exception as e:
+    print(f"❌ 错误: {e}")
+    sys.exit(1)
+EOF
 else
-    # 没有 jq，使用 sed
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' 's/"plugin": \[/"plugin": [\
-        "'"$PLUGIN_NAME"'",/' "$CONFIG_FILE"
-    else
-        sed -i 's/"plugin": \[/"plugin": [\n        "'"$PLUGIN_NAME"'",/' "$CONFIG_FILE"
-    fi
-    echo "✅ 已使用 sed 添加插件到配置"
+    echo "❌ 错误: 需要 Python 来安装插件"
+    echo ""
+    echo "📝 请手动添加以下内容到 $CONFIG_FILE 的 plugin 数组中:"
+    echo "   \"$PLUGIN_NAME\""
+    exit 1
 fi
 
 # 验证安装是否成功
@@ -74,9 +102,8 @@ if grep -q "opencode-tui-image-clipboard-fix" "$CONFIG_FILE"; then
     echo ""
 else
     echo ""
-    echo "❌ 安装失败，请手动添加以下内容到 $CONFIG_FILE 的 plugin 数组中:"
-    echo '   "github:A11thwn/opencode-tui-image-clipboard-fix"'
-    echo ""
-    echo "📦 原配置文件已备份到: $CONFIG_FILE.backup"
+    echo "❌ 安装失败"
+    echo "📝 请手动添加以下内容到 $CONFIG_FILE 的 plugin 数组中:"
+    echo "   \"$PLUGIN_NAME\""
     exit 1
 fi
