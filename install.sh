@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # OpenCode TUI Image Clipboard Fix - 一键安装脚本
-# 用法: curl -fsSL https://raw.githubusercontent.com/A11thwn/opencode-tui-image-clipboard-fix/main/install.sh | bash
+# 用法: curl -fsSL https://raw.githubusercontent.com/chanliang/opencode-tui-image-clipboard-fix/main/install.sh | bash
 
-PLUGIN_NAME="github:A11thwn/opencode-tui-image-clipboard-fix"
+PLUGIN_NAME="github:chanliang/opencode-tui-image-clipboard-fix"
 CONFIG_FILE="$HOME/.config/opencode/opencode.json"
 
 echo "🔧 OpenCode TUI Image Clipboard Fix 安装脚本"

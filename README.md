@@ -1,22 +1,20 @@
 # OpenCode TUI Image Clipboard Fix
 
-修复 OpenCode TUI 中图片粘贴和拖入的问题：自动将图片保存为本地文件，并替换 `[Image N]` 占位符为实际文件路径。
+修复 OpenCode TUI 中图片粘贴的问题：自动将剪贴板中的图片保存为本地文件，并替换 `[Image N]` 占位符为实际文件路径。
 
-## 🚀 一键安装
+## 🚀 安装
+
+1. 全局安装插件：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/A11thwn/opencode-tui-image-clipboard-fix/main/install.sh | bash
+npm install -g opencode-tui-image-clipboard-fix
 ```
 
-安装完成后，重启 OpenCode 即可使用。
-
-## 📦 手动安装
-
-在 `~/.config/opencode/opencode.json` 的 `plugin` 数组中添加：
+2. 在 `~/.config/opencode/opencode.json` 的 `plugin` 数组中添加：
 
 ```json
 {
-  "plugin": ["github:A11thwn/opencode-tui-image-clipboard-fix"]
+  "plugin": ["opencode-tui-image-clipboard-fix"]
 }
 ```
 
@@ -34,7 +32,7 @@ curl -fsSL https://raw.githubusercontent.com/A11thwn/opencode-tui-image-clipboar
 ```
 ┌─────────────────────────────────────────────────────┐
 │                OpenCode TUI                         │
-│  用户粘贴/拖入图片                                    │
+│  用户粘贴图片                                        │
 │  ↓                                                  │
 │  生成 FilePart (url: "data:image/...;base64,...")  │
 │  消息文本包含 [Image 1] 占位符                       │
@@ -82,7 +80,7 @@ curl -fsSL https://raw.githubusercontent.com/A11thwn/opencode-tui-image-clipboar
 ## 🔗 相关链接
 
 - [OpenCode](https://opencode.ai)
-- [GitHub Issues](https://github.com/A11thwn/opencode-tui-image-clipboard-fix/issues)
+- [GitHub Issues](https://github.com/chanliang/opencode-tui-image-clipboard-fix/issues)
 
 ## 📄 License
 

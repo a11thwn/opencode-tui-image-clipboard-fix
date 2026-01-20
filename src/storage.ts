@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ImageMetadata, StorageStats, PluginConfig } from './types';
-import { formatSize, extractImageInfo, generateHash, getImageDimensions } from './utils';
+import { ImageMetadata, StorageStats, PluginConfig } from './types.js';
+import { formatSize, extractImageInfo, generateHash, getImageDimensions } from './utils.js';
 
 /**
  * 图片存储管理器

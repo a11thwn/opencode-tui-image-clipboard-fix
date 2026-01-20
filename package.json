@@ -1,25 +1,27 @@
 {
   "name": "opencode-tui-image-clipboard-fix",
-  "version": "1.0.5",
-  "description": "OpenCode TUI plugin to fix image paste/drag issues - saves images locally and replaces [Image N] with file paths",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "1.0.11",
+  "type": "module",
+  "displayName": "Image Clipboard Fix",
+  "description": "OpenCode TUI plugin to fix image paste issues - saves clipboard images locally and replaces [Image N] with file paths",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
     }
   },
   "files": [
-    "dist",
+    "lib",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf lib",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [

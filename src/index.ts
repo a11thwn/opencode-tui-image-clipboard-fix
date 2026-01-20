@@ -1,8 +1,8 @@
 import * as os from "os";
 import * as path from "path";
-import { ImageStorageManager } from "./storage";
-import { PluginConfig } from "./types";
-import { formatSize } from "./utils";
+import { ImageStorageManager } from "./storage.js";
+import { PluginConfig } from "./types.js";
+import { formatSize } from "./utils.js";
 
 // Plugin 类型定义
 interface PluginInput {
@@ -107,7 +107,8 @@ const messageImagePaths = new Map<string, Map<string, string>>();
  * 3. 在发送给模型时替换 [Image N] 占位符为实际文件路径（不影响界面显示）
  * 4. 移除 FilePart，只保留文本（避免不支持图片的模型报错）
  */
-export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
+// Plugin implementation with specific function name for better identification
+export const ImageClipboardFix: Plugin = async ({ client, directory }: PluginInput) => {
   const config: PluginConfig = {
     ...DEFAULT_CONFIG,
   };
@@ -287,7 +288,7 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
         // 如果有图片路径，替换文本中的占位符
         if (imagePaths && imagePaths.size > 0) {
           const textPart = parts.find((p): p is TextPart => p.type === "text");
-          if (textPart && textPart.text) {
+          if (textPart && textPart.text && !textPart.text.includes("[Image Reference:")) {
             textPart.text = modifyTextContent(textPart.text, imagePaths);
           }
         }
@@ -322,4 +323,4 @@ export const ImageStoragePlugin: Plugin = async ({ client, directory }) => {
   };
 };
 
-export default ImageStoragePlugin;
+export default ImageClipboardFix;

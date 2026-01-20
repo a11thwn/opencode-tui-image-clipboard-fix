@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { ImageInfo } from './types';
+import { ImageInfo } from './types.js';
 
 /**
  * 格式化字节大小为人类可读格式
