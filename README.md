@@ -8,7 +8,7 @@
 
 ```json
 {
-  "plugin": ["opencode-tui-image-clipboard-fix@1.0.12"]
+  "plugin": ["opencode-tui-image-clipboard-fix@latest"]
 }
 ```
 
