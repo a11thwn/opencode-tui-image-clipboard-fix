@@ -4,19 +4,19 @@
 
 ## 🚀 安装
 
-1. 全局安装插件：
-
-```bash
-npm install -g opencode-tui-image-clipboard-fix
-```
-
-2. 在 `~/.config/opencode/opencode.json` 的 `plugin` 数组中添加：
+在 `~/.config/opencode/opencode.json` 的 `plugin` 数组中添加：
 
 ```json
 {
-  "plugin": ["opencode-tui-image-clipboard-fix"]
+  "plugin": ["opencode-tui-image-clipboard-fix@1.0.12"]
 }
 ```
+
+重启 OpenCode 即可，插件会自动下载安装。
+
+## 🗑️ 卸载
+
+从配置中删除该行，重启 OpenCode。
 
 ## ✨ 功能特性
 
