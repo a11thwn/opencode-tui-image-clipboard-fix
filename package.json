@@ -1,6 +1,6 @@
 {
   "name": "opencode-tui-image-clipboard-fix",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "type": "module",
   "displayName": "Image Clipboard Fix",
   "description": "OpenCode TUI plugin to fix image paste issues - saves clipboard images locally and replaces [Image N] with file paths",
